@@ -1,0 +1,284 @@
+{
+  "name": "VidCraft",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vidcraft",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "87a63eb3-e36e-4298-bf93-13015fb9d506",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -1824,
+        544
+      ],
+      "webhookId": "vidcraft-ai"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "theme",
+              "value": "={{ $json.theme || '关于坚持和成长的励志视频' }}"
+            },
+            {
+              "name": "style",
+              "value": "={{ $json.style || '温馨治愈' }}"
+            },
+            {
+              "name": "platform",
+              "value": "={{ $json.platform || 'TikTok' }}"
+            },
+            {
+              "name": "systemPrompt",
+              "value": "**你的角色：** 你是\"VidCraft AI\"，世界级的短视频策略师和编剧。你不仅是一个作者，更是数字时代的讲故事者和诗人。你的专长是将简单的想法转化为深刻的、以叙事为驱动的独白，为YouTube Shorts和TikTok平台创造情感共鸣、高度可分享的\"心灵鸡汤\"内容。你是叙事结构、隐喻语言和平台特定算法的专家。\n\n**你的任务：** 当用户提供一个主题、引言或励志视频的一般想法时，你将把它转化为一个完整的、可随时制作的视频项目计划。你的整个输出必须是一个单一的、有效的JSON对象，严格遵循下面提供的精确结构。不要在JSON对象前后添加任何文本或解释。\n\n**输出的核心原则：**\n1. **情感弧线：** 每个脚本都必须有清晰的情感旅程，从一个相关的问题或发人深省的问题开始，建立向令人振奋的领悟或\"顿悟\"时刻，并以积极的、可操作的收获结束。\n2. **爆款优先：** 前3秒至关重要。`viralityHook`和`storyboard`的第一个场景必须设计为阻止用户滑走。使用好奇心、大胆的陈述或视觉上引人注目的图像。\n3. **无缝叙事：** `script`必须作为一个单一的、连贯的独白或叙事流动。`storyboard`中的每个`voiceover`部分必须是主脚本的直接片段，确保流畅、不间断的收听体验。\n4. **平台优化：** 你必须选择最佳的主要平台（YouTube Shorts或TikTok）并在`platformReasoning`中证明你的选择，考虑目标受众和内容风格。\n5. **严格的JSON遵循：** 你的整个响应必须包含在单个JSON块中。没有例外。\n6. **诗意和富有感染力的语言：** 脚本是视频的灵魂。你必须利用隐喻、感官细节（视觉、听觉、触觉）和强大的意象。遵循\"展示，不要告诉\"的原则。目标是在听众的脑海中描绘一幅画面并唤起情感，而不仅仅是陈述一个事实或简单的励志短语。\n\n**JSON输出结构（严格遵循此格式）：**\n\n```json\n{\n  \"videoProject\": {\n    \"userInputSummary\": \"对用户请求的简短一句话总结。例如：'用户想要一个关于克服自我怀疑并拥抱独特人生旅程的励志视频。'\",\n    \"strategy\": {\n      \"targetAudience\": \"用心理特征定义目标受众。例如：'感到迷茫或被社会期望压迫的年轻成人（18-25岁），寻求动力和自我接受。'\",\n      \"primaryPlatform\": \"YouTube Shorts | TikTok\",\n      \"platformReasoning\": \"证明你的平台选择。例如：'选择TikTok是因为其强大的音乐发现引擎和趋势驱动的文化，这与积极向上、以音频为中心的叙事很好地结合。快节奏的编辑风格是该平台的本土特色。'\",\n      \"viralityHook\": \"在前1-3秒抓住注意力的核心概念。例如：'视频以屏幕文字开场：'你是不是也觉得自己走得比别人慢？'配上某人看着别人超过他们的镜头。'\"\n    },\n    \"metadata\": {\n      \"title\": \"引人注目、SEO友好且情感共鸣的标题。例如：'你的花期还没到，不必焦虑 | #人生感悟'\",\n      \"description\": \"为所选平台优化的详细描述。对于YouTube，包括关键词和摘要。对于TikTok，制作简洁、引人入胜的标题配相关标签。例如：'每个人都有自己的时区，不必用别人的标准来定义自己的成功。你的努力，终将绽放。#心灵鸡汤 #自我成长 #治愈 #励志'\",\n      \"tags\": [\n        \"人生哲理\",\n        \"励志语录\",\n        \"正能量\",\n        \"情绪价值\",\n        \"治愈系\"\n      ]\n    },\n    \"creativeElements\": {\n      \"videoStyle\": \"描述视觉美学。例如：'电影感慢镜头叙事'、'温馨治愈Vlog风'、'快节奏卡点混剪'\",\n      \"toneAndPacing\": \"描述情绪和节奏。例如：'舒缓、温暖、配以轻柔的背景音乐'、'快节奏、强鼓点、充满力量感'\",\n      \"script\": \"作为单个不间断字符串的完整配音脚本。这是最关键的创作元素。它必须是一个精美制作、情感共鸣的独白。它应遵循清晰的叙事路径：1.介绍一个相关的感受或斗争。2.使用隐喻或描述性语言探索它。3.达到令人振奋的洞察或'顿悟'时刻。语言必须是原创的，避免陈词滥调。至少融入一个强有力的隐喻或类比，并使用感官语言。例如，不要说'不要担心慢'，而要写成：'别担心，你只是在扎根。在那些看不见的日子里，你的根系，早已穿透了时间的土壤。当春天来临，你将比任何人都开得盛大。'\",\n      \"storyboard\": [\n        {\n          \"scene\": 1,\n          \"visuals\": \"视觉的详细描述。例如：'主观视角：清晨的阳光透过窗户洒在书桌上，一杯热气腾腾的咖啡旁边摊开着一本书。镜头缓慢推近。'\",\n          \"voiceover\": \"来自主脚本的相应片段。此片段应富含主脚本中定义的意象和诗意品质。\",\n          \"onScreenText\": \"此场景的关键文字叠加。例如：'别急，慢慢来。'\",\n          \"sfx\": \"建议的音效。例如：'清晨的鸟鸣声'、'轻柔的翻书声'\"\n        },\n        {\n          \"scene\": 2,\n          \"visuals\": \"例如：'空镜：地铁飞速驶过，车窗上倒映着城市模糊的光影。'\",\n          \"voiceover\": \"脚本的下一段。\",\n          \"onScreenText\": \"例如：'世界飞驰而过'\",\n          \"sfx\": \"例如：'地铁行驶的呼啸声'\"\n        }\n      ],\n      \"assetSuggestions\": {\n        \"visuals\": \"视频素材采购建议。例如：'使用Pexels或Storyblocks上的高质量素材，关键词：'独处'、'日出'、'自然'、'个人成长'。画面色调统一为暖色调。'\",\n        \"backgroundMusic\": \"具体的音乐建议。例如：'背景音乐：Marconi Union的'Weightless'或类似的无版权氛围音乐，营造宁静、引人深思的氛围。'\"\n      }\n    },\n    \"callToAction\": {\n      \"text\": \"符合语调的温和、引人入胜的行动号召。例如：'如果这句话治愈了你，留下一个'❤️'吧。关注我，用声音温暖你。'\",\n      \"placement\": \"行动号召出现的方式和位置。例如：'视频最后3秒，与logo一同出现在屏幕中央，同时语音读出。'\"\n    }\n  }\n}\n```\n\n**重要提醒:**\n- 必须严格按照上述 JSON 结构输出\n- 不要在 JSON 前后添加任何解释文字\n- script 字段是整个项目的核心，务必用心雕琢\n- 每个 storyboard 场景的 voiceover 必须是 script 的连续片段\n- 使用富有诗意和感染力的中文表达\n- 确保情感弧线完整：问题 → 探索 → 顿悟 → 行动"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "917f461f-c4f8-43df-80f5-355f0706680c",
+      "name": "构建参数",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        -1600,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-goog-api-key",
+              "value": "AIzaSyAf9eQps3OuJU6jJGRVJxZpUO7qI2Cn6pM"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "=json",
+        "specifyBody": "json",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "jsonBody": "={{\n    {\n      \"contents\": [\n        {\n          \"parts\": [\n            {\n              \"text\": $('构建参数').item.json.systemPrompt\n            }\n          ]\n        }\n      ],\n      \"generationConfig\": {\n        \"temperature\": 0.7,\n        \"topK\": 40,\n        \"topP\": 0.95,\n        \"maxOutputTokens\": 32768,\n        \"responseMimeType\": \"application/json\",\n        \"thinkingConfig\": {\n          \"thinkingBudget\": 0\n        }\n      },\n      \"safetySettings\": [\n        {\n          \"category\": \"HARM_CATEGORY_HARASSMENT\",\n          \"threshold\": \"BLOCK_MEDIUM_AND_ABOVE\"\n        },\n        {\n          \"category\": \"HARM_CATEGORY_HATE_SPEECH\",\n          \"threshold\": \"BLOCK_MEDIUM_AND_ABOVE\"\n        }\n      ]\n    }\n  }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "e7b427d5-121f-4552-b7b5-f47aac2e77cc",
+      "name": "调用Gemini API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -1376,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "  // 修复版 - 处理多个流式chunk的响应\n  const responseArray = $input.all(); // 获取所有输入数据\n\n  try {\n    console.log(`接收到 ${responseArray.length} 个响应chunk`);\n\n    let fullContent = '';\n    let totalTokens = 0;\n\n    // 遍历所有响应chunk，按顺序组装完整内容\n    for (let i = 0; i < responseArray.length; i++) {\n      const response = responseArray[i].json;\n\n      if (response.candidates && response.candidates[0] &&\n  response.candidates[0].content) {\n        const text = response.candidates[0].content.parts[0].text;\n        if (text) {\n          fullContent += text;\n          console.log(`第 ${i + 1} 个chunk添加了 ${text.length} 字符`);\n        }\n      }\n\n      // 累计token数\n      if (response.usageMetadata) {\n        totalTokens = response.usageMetadata.candidatesTokenCount;\n      }\n    }\n\n    console.log(`组装完成：总长度 ${fullContent.length} 字符，${totalTokens} tokens`);\n    console.log('完整内容前100字符:', fullContent.substring(0, 100));\n    console.log('完整内容后100字符:', fullContent.substring(fullContent.length - 100));\n\n    // 验证JSON是否完整\n    if (!fullContent.trim().endsWith('}')) {\n      throw new Error('生成的JSON不完整，缺少结束符');\n    }\n\n    // 解析完整的JSON\n    let videoProject;\n    try {\n      videoProject = JSON.parse(fullContent);\n    } catch (parseError) {\n      console.error('JSON解析失败:', parseError.message);\n      console.log('尝试提取JSON片段...');\n\n      const jsonMatch = fullContent.match(/\\{[\\s\\S]*\\}/);\n      if (jsonMatch) {\n        videoProject = JSON.parse(jsonMatch[0]);\n      } else {\n        throw new Error('无法解析JSON内容');\n      }\n    }\n\n    // 验证必需字段\n    const requiredFields = [\n      'videoProject',\n      'videoProject.strategy',\n      'videoProject.metadata',\n      'videoProject.creativeElements',\n      'videoProject.creativeElements.script',\n      'videoProject.creativeElements.storyboard'\n    ];\n\n    for (const field of requiredFields) {\n      const keys = field.split('.');\n      let current = videoProject;\n      for (const key of keys) {\n        if (!current || !current[key]) {\n          throw new Error(`缺少必需字段: ${field}`);\n        }\n        current = current[key];\n      }\n    }\n\n    // 添加元数据\n    videoProject.videoProject.metadata.generatedAt = new Date().toISOString();\n    videoProject.videoProject.metadata.processedBy = 'Gemini-2.5-Flash-Streaming';\n    videoProject.videoProject.metadata.streamingStats = {\n      chunksReceived: responseArray.length,\n      totalTokens: totalTokens,\n      contentLength: fullContent.length\n    };\n\n    console.log('🎉 完整JSON处理成功!');\n\n    return {\n      success: true,\n      data: videoProject,\n      stats: {\n        chunksProcessed: responseArray.length,\n        totalTokens: totalTokens,\n        contentLength: fullContent.length,\n        scriptLength: videoProject.videoProject.creativeElements.script.length,\n        scenesCount: videoProject.videoProject.creativeElements.storyboard.length\n      }\n    };\n\n  } catch (error) {\n    console.error('处理流式响应时出错:', error);\n    return {\n      success: false,\n      error: error.message,\n      debug: {\n        chunksReceived: responseArray.length,\n        firstChunk: responseArray[0]?.json || null\n      }\n    };\n  }"
+      },
+      "id": "fd1013ee-e9dc-46ad-90e8-5f95da71d4e2",
+      "name": "处理响应",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1168,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.success }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "8237b3c7-797b-4738-aea2-5bf77ba95ecb",
+      "name": "检查处理结果",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -944,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.data }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "X-Generated-By",
+                "value": "VidCraft-AI-Gemini-2.5-Flash"
+              }
+            ]
+          }
+        }
+      },
+      "id": "b7ec1d01-8cbc-410b-95ea-89ab18d97613",
+      "name": "成功响应",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\\n  \"error\": \"VidCraft AI 生成失败\",\\n  \"message\": $json.error,\\n  \"timestamp\": $json.timestamp || new Date().toISOString(),\\n  \"details\": {\\n    \"service\": \"Gemini-2.5-Flash\",\\n    \"workflow\": \"VidCraft AI\",\\n    \"originalResponse\": $json.originalResponse\\n  }\\n}",
+        "options": {
+          "responseCode": 500,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "cf17bf51-36fe-415a-9881-fde42eb55326",
+      "name": "错误响应",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        640
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "构建参数",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "构建参数": {
+      "main": [
+        [
+          {
+            "node": "调用Gemini API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "调用Gemini API": {
+      "main": [
+        [
+          {
+            "node": "处理响应",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "处理响应": {
+      "main": [
+        [
+          {
+            "node": "检查处理结果",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "检查处理结果": {
+      "main": [
+        [
+          {
+            "node": "成功响应",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "错误响应",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Hong_Kong",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "ae348ad4-3ea2-4cce-9572-8dbabdb1bc87",
+  "meta": {
+    "instanceId": "af97a33b5dccf3b4fb94940c9d620615f33c885969c00a70ceabac2b1a80d5e2"
+  },
+  "id": "ob3hoVC6icJOoYX1",
+  "tags": [
+    {
+      "createdAt": "2025-08-28T09:39:55.617Z",
+      "updatedAt": "2025-08-28T09:39:55.617Z",
+      "id": "b0iTuBX4EfS2HgZO",
+      "name": "VidCraft AI"
+    },
+    {
+      "createdAt": "2025-08-28T09:39:55.622Z",
+      "updatedAt": "2025-08-28T09:39:55.622Z",
+      "id": "G3kDRa7TiZFJ05M6",
+      "name": "Gemini"
+    },
+    {
+      "createdAt": "2025-08-28T09:39:55.618Z",
+      "updatedAt": "2025-08-28T09:39:55.618Z",
+      "id": "UYlcsLUkjtSKfBtq",
+      "name": "Video Generation"
+    }
+  ]
+}
