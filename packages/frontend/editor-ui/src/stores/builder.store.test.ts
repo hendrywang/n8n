@@ -8,8 +8,12 @@ import { usePostHog } from './posthog.store';
 import { useSettingsStore } from '@/stores/settings.store';
 import { defaultSettings } from '../__tests__/defaults';
 import merge from 'lodash/merge';
-import { DEFAULT_POSTHOG_SETTINGS } from './posthog.test';
-import { WORKFLOW_BUILDER_EXPERIMENT, DEFAULT_NEW_WORKFLOW_NAME } from '@/constants';
+import { DEFAULT_POSTHOG_SETTINGS } from './posthog.store.test';
+import {
+	WORKFLOW_BUILDER_DEPRECATED_EXPERIMENT,
+	WORKFLOW_BUILDER_RELEASE_EXPERIMENT,
+	DEFAULT_NEW_WORKFLOW_NAME,
+} from '@/constants';
 import { reactive } from 'vue';
 import * as chatAPI from '@/api/ai';
 import * as telemetryModule from '@/composables/useTelemetry';
@@ -71,7 +75,7 @@ spy.mockImplementation(
 const setAssistantEnabled = (enabled: boolean) => {
 	settingsStore.setSettings(
 		merge({}, defaultSettings, {
-			aiAssistant: { enabled },
+			aiAssistant: { enabled, setup: true },
 		}),
 	);
 };
@@ -257,8 +261,8 @@ describe('AI Builder store', () => {
 			],
 		});
 
-		// Should show "aiAssistant.thinkingSteps.runningTools"
-		expect(builderStore.assistantThinkingMessage).toBe('aiAssistant.thinkingSteps.runningTools');
+		// Should show "aiAssistant.thinkingSteps.thinking"
+		expect(builderStore.assistantThinkingMessage).toBe('aiAssistant.thinkingSteps.thinking');
 
 		// Second tool starts (different toolCallId)
 		onMessageCallback({
@@ -274,8 +278,8 @@ describe('AI Builder store', () => {
 			],
 		});
 
-		// Still showing "aiAssistant.thinkingSteps.runningTools" with multiple tools
-		expect(builderStore.assistantThinkingMessage).toBe('aiAssistant.thinkingSteps.runningTools');
+		// Still showing "aiAssistant.thinkingSteps.thinking" with multiple tools
+		expect(builderStore.assistantThinkingMessage).toBe('aiAssistant.thinkingSteps.thinking');
 
 		// First tool completes
 		onMessageCallback({
@@ -291,8 +295,8 @@ describe('AI Builder store', () => {
 			],
 		});
 
-		// Still "aiAssistant.thinkingSteps.runningTools" because second tool is still running
-		expect(builderStore.assistantThinkingMessage).toBe('aiAssistant.thinkingSteps.runningTools');
+		// Still "aiAssistant.thinkingSteps.thinking" because second tool is still running
+		expect(builderStore.assistantThinkingMessage).toBe('aiAssistant.thinkingSteps.thinking');
 
 		// Second tool completes
 		onMessageCallback({
@@ -308,19 +312,15 @@ describe('AI Builder store', () => {
 			],
 		});
 
-		// Now should show "aiAssistant.thinkingSteps.processingResults" because all tools completed
-		expect(builderStore.assistantThinkingMessage).toBe(
-			'aiAssistant.thinkingSteps.processingResults',
-		);
+		// Now should show "aiAssistant.thinkingSteps.thinking" because all tools completed
+		expect(builderStore.assistantThinkingMessage).toBe('aiAssistant.thinkingSteps.thinking');
 
 		// Call onDone to stop streaming
 		onDoneCallback();
 
 		// Message should persist after streaming ends
 		expect(builderStore.streaming).toBe(false);
-		expect(builderStore.assistantThinkingMessage).toBe(
-			'aiAssistant.thinkingSteps.processingResults',
-		);
+		expect(builderStore.assistantThinkingMessage).toBe('aiAssistant.thinkingSteps.thinking');
 
 		vi.useRealTimers();
 	});
@@ -360,18 +360,14 @@ describe('AI Builder store', () => {
 
 		builderStore.sendChatMessage({ text: 'Add a node' });
 
-		// Should show "aiAssistant.thinkingSteps.processingResults" when tool completes
+		// Should show "aiAssistant.thinkingSteps.thinking" when tool completes
 		await vi.waitFor(() =>
-			expect(builderStore.assistantThinkingMessage).toBe(
-				'aiAssistant.thinkingSteps.processingResults',
-			),
+			expect(builderStore.assistantThinkingMessage).toBe('aiAssistant.thinkingSteps.thinking'),
 		);
 
-		// Should still show "aiAssistant.thinkingSteps.processingResults" after workflow-updated
+		// Should still show "aiAssistant.thinkingSteps.thinking" after workflow-updated
 		await vi.waitFor(() => expect(builderStore.chatMessages).toHaveLength(3)); // user + tool + workflow
-		expect(builderStore.assistantThinkingMessage).toBe(
-			'aiAssistant.thinkingSteps.processingResults',
-		);
+		expect(builderStore.assistantThinkingMessage).toBe('aiAssistant.thinkingSteps.thinking');
 
 		// Verify streaming has ended
 		expect(builderStore.streaming).toBe(false);
@@ -424,17 +420,51 @@ describe('AI Builder store', () => {
 		expect(builderStore.canShowAssistantButtonsOnCanvas).toBe(true);
 	});
 
-	// Split into two separate tests to avoid caching issues with computed properties
-	it('should return true when experiment flag is set to variant', () => {
-		const builderStore = useBuilderStore();
-		vi.spyOn(posthogStore, 'getVariant').mockReturnValue(WORKFLOW_BUILDER_EXPERIMENT.variant);
-		expect(builderStore.isAIBuilderEnabled).toBe(true);
-	});
+	describe('isAIBuilderEnabled computed property', () => {
+		it('should return true when release experiment is set to variant', () => {
+			const builderStore = useBuilderStore();
+			vi.spyOn(posthogStore, 'getVariant').mockImplementation((experimentName) => {
+				if (experimentName === WORKFLOW_BUILDER_RELEASE_EXPERIMENT.name) {
+					return WORKFLOW_BUILDER_RELEASE_EXPERIMENT.variant;
+				}
+				return WORKFLOW_BUILDER_DEPRECATED_EXPERIMENT.control; // deprecated should be control
+			});
+			expect(builderStore.isAIBuilderEnabled).toBe(true);
+		});
 
-	it('should return false when experiment flag is set to control', () => {
-		const builderStore = useBuilderStore();
-		vi.spyOn(posthogStore, 'getVariant').mockReturnValue(WORKFLOW_BUILDER_EXPERIMENT.control);
-		expect(builderStore.isAIBuilderEnabled).toBe(false);
+		it('should return true when release experiment is control but deprecated experiment is variant', () => {
+			const builderStore = useBuilderStore();
+			vi.spyOn(posthogStore, 'getVariant').mockImplementation((experimentName) => {
+				if (experimentName === WORKFLOW_BUILDER_RELEASE_EXPERIMENT.name) {
+					return WORKFLOW_BUILDER_RELEASE_EXPERIMENT.control;
+				}
+				return WORKFLOW_BUILDER_DEPRECATED_EXPERIMENT.variant;
+			});
+			expect(builderStore.isAIBuilderEnabled).toBe(true);
+		});
+
+		it('should return false when both experiments are set to control', () => {
+			const builderStore = useBuilderStore();
+			vi.spyOn(posthogStore, 'getVariant').mockImplementation((experimentName) => {
+				if (experimentName === WORKFLOW_BUILDER_RELEASE_EXPERIMENT.name) {
+					return WORKFLOW_BUILDER_RELEASE_EXPERIMENT.control;
+				}
+				return WORKFLOW_BUILDER_DEPRECATED_EXPERIMENT.control;
+			});
+			expect(builderStore.isAIBuilderEnabled).toBe(false);
+		});
+
+		it('should prioritize release experiment over deprecated experiment', () => {
+			const builderStore = useBuilderStore();
+			vi.spyOn(posthogStore, 'getVariant').mockImplementation((experimentName) => {
+				if (experimentName === WORKFLOW_BUILDER_RELEASE_EXPERIMENT.name) {
+					return WORKFLOW_BUILDER_RELEASE_EXPERIMENT.variant;
+				}
+				// Even if deprecated is control, release variant should win
+				return WORKFLOW_BUILDER_DEPRECATED_EXPERIMENT.control;
+			});
+			expect(builderStore.isAIBuilderEnabled).toBe(true);
+		});
 	});
 
 	it('should initialize builder chat session with prompt', async () => {
@@ -712,7 +742,7 @@ describe('AI Builder store', () => {
 			// Verify the API was called with correct parameters
 			expect(apiSpy).toHaveBeenCalled();
 			const callArgs = apiSpy.mock.calls[0];
-			expect(callArgs).toHaveLength(6); // Should have 6 arguments
+			expect(callArgs).toHaveLength(7); // Should have 7 arguments
 
 			const signal = callArgs[5]; // The 6th argument is the abort signal
 			expect(signal).toBeDefined();
@@ -1050,6 +1080,331 @@ describe('AI Builder store', () => {
 
 			// Should not call setWorkflowName again
 			expect(mockSetWorkflowName).toHaveBeenCalledTimes(1);
+		});
+	});
+
+	describe('useDeprecatedCredentials logic in sendChatMessage', () => {
+		it('should set useDeprecatedCredentials to true when release experiment is control and deprecated experiment is variant', () => {
+			const builderStore = useBuilderStore();
+
+			// Mock posthog to return control for release and variant for deprecated
+			vi.spyOn(posthogStore, 'getVariant').mockImplementation((experimentName) => {
+				if (experimentName === WORKFLOW_BUILDER_RELEASE_EXPERIMENT.name) {
+					return WORKFLOW_BUILDER_RELEASE_EXPERIMENT.control;
+				}
+				return WORKFLOW_BUILDER_DEPRECATED_EXPERIMENT.variant;
+			});
+
+			// Mock the API to capture the arguments
+			apiSpy.mockImplementationOnce(() => {});
+
+			builderStore.sendChatMessage({ text: 'test message' });
+
+			// Verify chatWithBuilder was called with useDeprecatedCredentials = true
+			expect(apiSpy).toHaveBeenCalledWith(
+				expect.anything(), // rootStore.restApiContext
+				expect.anything(), // payload
+				expect.anything(), // onMessage callback
+				expect.anything(), // onDone callback
+				expect.anything(), // onError callback
+				expect.anything(), // abort signal
+				true, // useDeprecatedCredentials
+			);
+		});
+
+		it('should set useDeprecatedCredentials to false when release experiment is variant', () => {
+			const builderStore = useBuilderStore();
+
+			// Mock posthog to return variant for release (regardless of deprecated)
+			vi.spyOn(posthogStore, 'getVariant').mockImplementation((experimentName) => {
+				if (experimentName === WORKFLOW_BUILDER_RELEASE_EXPERIMENT.name) {
+					return WORKFLOW_BUILDER_RELEASE_EXPERIMENT.variant;
+				}
+				return WORKFLOW_BUILDER_DEPRECATED_EXPERIMENT.variant;
+			});
+
+			// Mock the API to capture the arguments
+			apiSpy.mockImplementationOnce(() => {});
+
+			builderStore.sendChatMessage({ text: 'test message' });
+
+			// Verify chatWithBuilder was called with useDeprecatedCredentials = false
+			expect(apiSpy).toHaveBeenCalledWith(
+				expect.anything(), // rootStore.restApiContext
+				expect.anything(), // payload
+				expect.anything(), // onMessage callback
+				expect.anything(), // onDone callback
+				expect.anything(), // onError callback
+				expect.anything(), // abort signal
+				false, // useDeprecatedCredentials
+			);
+		});
+
+		it('should set useDeprecatedCredentials to false when both experiments are control', () => {
+			const builderStore = useBuilderStore();
+
+			// Mock posthog to return control for both experiments
+			vi.spyOn(posthogStore, 'getVariant').mockImplementation((experimentName) => {
+				if (experimentName === WORKFLOW_BUILDER_RELEASE_EXPERIMENT.name) {
+					return WORKFLOW_BUILDER_RELEASE_EXPERIMENT.control;
+				}
+				return WORKFLOW_BUILDER_DEPRECATED_EXPERIMENT.control;
+			});
+
+			// Mock the API to capture the arguments
+			apiSpy.mockImplementationOnce(() => {});
+
+			builderStore.sendChatMessage({ text: 'test message' });
+
+			// Verify chatWithBuilder was called with useDeprecatedCredentials = false
+			expect(apiSpy).toHaveBeenCalledWith(
+				expect.anything(), // rootStore.restApiContext
+				expect.anything(), // payload
+				expect.anything(), // onMessage callback
+				expect.anything(), // onDone callback
+				expect.anything(), // onError callback
+				expect.anything(), // abort signal
+				false, // useDeprecatedCredentials
+			);
+		});
+	});
+
+	describe('Credits management', () => {
+		it('should update builder credits correctly', () => {
+			const builderStore = useBuilderStore();
+
+			// Initially undefined
+			expect(builderStore.creditsQuota).toBeUndefined();
+			expect(builderStore.creditsRemaining).toBeUndefined();
+
+			// Update credits
+			builderStore.updateBuilderCredits(100, 30);
+
+			expect(builderStore.creditsQuota).toBe(100);
+			expect(builderStore.creditsRemaining).toBe(70);
+		});
+
+		it('should handle unlimited credits (quota = -1)', () => {
+			const builderStore = useBuilderStore();
+
+			builderStore.updateBuilderCredits(-1, 50);
+
+			expect(builderStore.creditsQuota).toBe(-1);
+			expect(builderStore.creditsRemaining).toBeUndefined();
+		});
+
+		it('should handle edge case where claimed > quota', () => {
+			const builderStore = useBuilderStore();
+
+			builderStore.updateBuilderCredits(50, 100);
+
+			expect(builderStore.creditsQuota).toBe(50);
+			expect(builderStore.creditsRemaining).toBe(0);
+		});
+
+		it('should return undefined when credits are not initialized', () => {
+			const builderStore = useBuilderStore();
+
+			expect(builderStore.creditsRemaining).toBeUndefined();
+		});
+
+		it('should return undefined when only quota is set', () => {
+			const builderStore = useBuilderStore();
+
+			builderStore.updateBuilderCredits(100, undefined);
+
+			expect(builderStore.creditsRemaining).toBeUndefined();
+		});
+
+		it('should return undefined when only claimed is set', () => {
+			const builderStore = useBuilderStore();
+
+			builderStore.updateBuilderCredits(undefined, 50);
+
+			expect(builderStore.creditsRemaining).toBeUndefined();
+		});
+	});
+
+	describe('hasNoCreditsRemaining', () => {
+		it('should return false when creditsRemaining is undefined', () => {
+			const builderStore = useBuilderStore();
+
+			// No credits initialized
+			expect(builderStore.hasNoCreditsRemaining).toBe(false);
+		});
+
+		it('should return true when creditsRemaining is 0', () => {
+			const builderStore = useBuilderStore();
+
+			builderStore.updateBuilderCredits(100, 100);
+
+			expect(builderStore.creditsRemaining).toBe(0);
+			expect(builderStore.hasNoCreditsRemaining).toBe(true);
+		});
+
+		it('should return false when creditsRemaining is greater than 0', () => {
+			const builderStore = useBuilderStore();
+
+			builderStore.updateBuilderCredits(100, 30);
+
+			expect(builderStore.creditsRemaining).toBe(70);
+			expect(builderStore.hasNoCreditsRemaining).toBe(false);
+		});
+
+		it('should return false when quota is undefined', () => {
+			const builderStore = useBuilderStore();
+
+			builderStore.updateBuilderCredits(undefined, 50);
+
+			expect(builderStore.creditsRemaining).toBeUndefined();
+			expect(builderStore.hasNoCreditsRemaining).toBe(false);
+		});
+
+		it('should return false when claimed is undefined', () => {
+			const builderStore = useBuilderStore();
+
+			builderStore.updateBuilderCredits(100, undefined);
+
+			expect(builderStore.creditsRemaining).toBeUndefined();
+			expect(builderStore.hasNoCreditsRemaining).toBe(false);
+		});
+
+		it('should return false when unlimited credits (quota = -1)', () => {
+			const builderStore = useBuilderStore();
+
+			builderStore.updateBuilderCredits(-1, 50);
+
+			expect(builderStore.creditsRemaining).toBeUndefined();
+			expect(builderStore.hasNoCreditsRemaining).toBe(false);
+		});
+
+		it('should return true when claimed exceeds quota', () => {
+			const builderStore = useBuilderStore();
+
+			builderStore.updateBuilderCredits(50, 100);
+
+			expect(builderStore.creditsRemaining).toBe(0);
+			expect(builderStore.hasNoCreditsRemaining).toBe(true);
+		});
+
+		it('should return false when user has credits available', () => {
+			const builderStore = useBuilderStore();
+
+			builderStore.updateBuilderCredits(100, 25);
+
+			expect(builderStore.creditsRemaining).toBe(75);
+			expect(builderStore.hasNoCreditsRemaining).toBe(false);
+		});
+
+		it('should return true immediately after all credits are consumed', () => {
+			const builderStore = useBuilderStore();
+
+			// Start with some credits
+			builderStore.updateBuilderCredits(100, 99);
+			expect(builderStore.hasNoCreditsRemaining).toBe(false);
+
+			// Consume last credit
+			builderStore.updateBuilderCredits(100, 100);
+			expect(builderStore.hasNoCreditsRemaining).toBe(true);
+		});
+	});
+
+	describe('fetchBuilderCredits', () => {
+		const mockGetBuilderCredits = vi.spyOn(chatAPI, 'getBuilderCredits');
+
+		beforeEach(() => {
+			mockGetBuilderCredits.mockClear();
+		});
+
+		it('should fetch and update credits when release experiment is variant', async () => {
+			const builderStore = useBuilderStore();
+
+			// Mock posthog to return variant for release experiment
+			vi.spyOn(posthogStore, 'getVariant').mockImplementation((experimentName) => {
+				if (experimentName === WORKFLOW_BUILDER_RELEASE_EXPERIMENT.name) {
+					return WORKFLOW_BUILDER_RELEASE_EXPERIMENT.variant;
+				}
+				return WORKFLOW_BUILDER_DEPRECATED_EXPERIMENT.control;
+			});
+
+			// Mock API response
+			mockGetBuilderCredits.mockResolvedValueOnce({
+				creditsQuota: 200,
+				creditsClaimed: 50,
+			});
+
+			await builderStore.fetchBuilderCredits();
+
+			expect(mockGetBuilderCredits).toHaveBeenCalled();
+			expect(builderStore.creditsQuota).toBe(200);
+			expect(builderStore.creditsRemaining).toBe(150);
+		});
+
+		it('should not fetch credits when release experiment is not variant', async () => {
+			const builderStore = useBuilderStore();
+
+			// Mock posthog to return control for release experiment
+			vi.spyOn(posthogStore, 'getVariant').mockImplementation((experimentName) => {
+				if (experimentName === WORKFLOW_BUILDER_RELEASE_EXPERIMENT.name) {
+					return WORKFLOW_BUILDER_RELEASE_EXPERIMENT.control;
+				}
+				return WORKFLOW_BUILDER_DEPRECATED_EXPERIMENT.variant;
+			});
+
+			await builderStore.fetchBuilderCredits();
+
+			expect(mockGetBuilderCredits).not.toHaveBeenCalled();
+			expect(builderStore.creditsQuota).toBeUndefined();
+			expect(builderStore.creditsRemaining).toBeUndefined();
+		});
+
+		it('should handle API errors gracefully', async () => {
+			const builderStore = useBuilderStore();
+
+			// Mock posthog to return variant for release experiment
+			vi.spyOn(posthogStore, 'getVariant').mockImplementation((experimentName) => {
+				if (experimentName === WORKFLOW_BUILDER_RELEASE_EXPERIMENT.name) {
+					return WORKFLOW_BUILDER_RELEASE_EXPERIMENT.variant;
+				}
+				return WORKFLOW_BUILDER_DEPRECATED_EXPERIMENT.control;
+			});
+
+			// Mock API to throw error
+			mockGetBuilderCredits.mockRejectedValueOnce(new Error('API error'));
+
+			await builderStore.fetchBuilderCredits();
+
+			expect(mockGetBuilderCredits).toHaveBeenCalled();
+			// Credits should remain undefined on error
+			expect(builderStore.creditsQuota).toBeUndefined();
+			expect(builderStore.creditsRemaining).toBeUndefined();
+		});
+
+		it('should call fetchBuilderCredits when opening chat', async () => {
+			const builderStore = useBuilderStore();
+
+			// Mock posthog to return variant for release experiment
+			vi.spyOn(posthogStore, 'getVariant').mockImplementation((experimentName) => {
+				if (experimentName === WORKFLOW_BUILDER_RELEASE_EXPERIMENT.name) {
+					return WORKFLOW_BUILDER_RELEASE_EXPERIMENT.variant;
+				}
+				return WORKFLOW_BUILDER_DEPRECATED_EXPERIMENT.control;
+			});
+
+			// Mock API response
+			mockGetBuilderCredits.mockResolvedValueOnce({
+				creditsQuota: 100,
+				creditsClaimed: 20,
+			});
+
+			// Mock loadSessions to prevent actual API call
+			vi.spyOn(chatAPI, 'getAiSessions').mockResolvedValueOnce({ sessions: [] });
+
+			await builderStore.openChat();
+
+			expect(mockGetBuilderCredits).toHaveBeenCalled();
+			expect(builderStore.creditsQuota).toBe(100);
+			expect(builderStore.creditsRemaining).toBe(80);
 		});
 	});
 });

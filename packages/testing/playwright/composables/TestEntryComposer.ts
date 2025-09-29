@@ -20,26 +20,37 @@ export class TestEntryComposer {
 	 */
 	async fromBlankCanvas() {
 		await this.n8n.goHome();
-		await this.n8n.workflows.clickAddWorkflowButton();
+		await this.n8n.workflows.addResource.workflow();
 		// Verify we're on canvas
 		await this.n8n.canvas.canvasPane().isVisible();
 	}
 
 	/**
-	 * Start UI test from a workflow in a new project
+	 * Start UI test from a workflow in a new project on a new canvas
 	 */
-	async fromNewProject() {
+	async fromNewProjectBlankCanvas() {
 		// Enable features to allow us to create a new project
 		await this.n8n.api.enableFeature('projectRole:admin');
 		await this.n8n.api.enableFeature('projectRole:editor');
 		await this.n8n.api.setMaxTeamProjectsQuota(-1);
 
 		// Create a project using the API
-		const response = await this.n8n.api.projectApi.createProject();
+		const response = await this.n8n.api.projects.createProject();
 
 		const projectId = response.id;
 		await this.n8n.page.goto(`workflow/new?projectId=${projectId}`);
 		await this.n8n.canvas.canvasPane().isVisible();
+		return projectId;
+	}
+
+	async fromNewProject() {
+		await this.withProjectFeatures();
+		// Create a project using the API
+		const response = await this.n8n.api.projects.createProject();
+
+		const projectId = response.id;
+		await this.n8n.navigate.toProject(projectId);
+		return projectId;
 	}
 
 	/**
@@ -50,5 +61,18 @@ export class TestEntryComposer {
 		const workflowImportResult = await this.n8n.api.workflowApi.importWorkflow(workflowFile);
 		await this.n8n.page.goto(`workflow/${workflowImportResult.workflowId}`);
 		return workflowImportResult;
+	}
+
+	/**
+	 * Enable project feature set
+	 * Allow project creation, sharing, and folder creation
+	 */
+	async withProjectFeatures() {
+		await this.n8n.api.enableFeature('sharing');
+		await this.n8n.api.enableFeature('folders');
+		await this.n8n.api.enableFeature('advancedPermissions');
+		await this.n8n.api.enableFeature('projectRole:admin');
+		await this.n8n.api.enableFeature('projectRole:editor');
+		await this.n8n.api.setMaxTeamProjectsQuota(-1);
 	}
 }

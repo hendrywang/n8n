@@ -270,9 +270,9 @@ onMounted(() => {
 		@click:add="addEmptyVariableForm"
 	>
 		<template #header>
-			<n8n-heading size="2xlarge" class="mb-m">
+			<N8nHeading size="2xlarge" class="mb-m">
 				{{ i18n.baseText('variables.heading') }}
-			</n8n-heading>
+			</N8nHeading>
 		</template>
 		<template #add-button>
 			<N8nTooltip placement="top" :disabled="canCreateVariables">
@@ -347,7 +347,7 @@ onMounted(() => {
 				</td>
 				<td>
 					<template v-if="data.value">
-						{{ data.value }}
+						<span v-n8n-truncate:20="data.value" />
 					</template>
 					<N8nBadge v-else theme="warning"> Value missing </N8nBadge>
 				</td>

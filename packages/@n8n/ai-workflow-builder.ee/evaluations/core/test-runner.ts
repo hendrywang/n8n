@@ -1,11 +1,12 @@
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 
-import type { SimpleWorkflow } from '../../src/types/workflow.js';
-import type { WorkflowBuilderAgent, ChatPayload } from '../../src/workflow-builder-agent.js';
-import { evaluateWorkflow } from '../chains/workflow-evaluator.js';
-import type { EvaluationInput, EvaluationResult, TestCase } from '../types/evaluation.js';
-import { isWorkflowStateValues } from '../types/langsmith.js';
-import type { TestResult } from '../types/test-result.js';
+import type { SimpleWorkflow } from '../../src/types/workflow';
+import type { WorkflowBuilderAgent } from '../../src/workflow-builder-agent';
+import { evaluateWorkflow } from '../chains/workflow-evaluator';
+import type { EvaluationInput, EvaluationResult, TestCase } from '../types/evaluation';
+import { isWorkflowStateValues } from '../types/langsmith';
+import type { TestResult } from '../types/test-result';
+import { consumeGenerator, getChatPayload } from '../utils/evaluation-helpers';
 
 /**
  * Creates an error result for a failed test
@@ -25,6 +26,24 @@ export function createErrorResult(testCase: TestCase, error: unknown): TestResul
 			connections: { score: 0, violations: [] },
 			expressions: { score: 0, violations: [] },
 			nodeConfiguration: { score: 0, violations: [] },
+			efficiency: {
+				score: 0,
+				violations: [],
+				redundancyScore: 0,
+				pathOptimization: 0,
+				nodeCountEfficiency: 0,
+			},
+			dataFlow: {
+				score: 0,
+				violations: [],
+			},
+			maintainability: {
+				score: 0,
+				violations: [],
+				nodeNamingQuality: 0,
+				workflowOrganization: 0,
+				modularity: 0,
+			},
 			structuralSimilarity: { score: 0, violations: [], applicable: false },
 			summary: `Evaluation failed: ${errorMessage}`,
 		},
@@ -48,19 +67,9 @@ export async function runSingleTest(
 	userId: string = 'test-user',
 ): Promise<TestResult> {
 	try {
-		const chatPayload: ChatPayload = {
-			message: testCase.prompt,
-			workflowContext: {
-				currentWorkflow: { id: testCase.id, nodes: [], connections: {} },
-			},
-		};
-
 		// Generate workflow
 		const startTime = Date.now();
-		let messageCount = 0;
-		for await (const _output of agent.chat(chatPayload, userId)) {
-			messageCount++;
-		}
+		await consumeGenerator(agent.chat(getChatPayload(testCase.prompt, testCase.id), userId));
 		const generationTime = Date.now() - startTime;
 
 		// Get generated workflow with validation
